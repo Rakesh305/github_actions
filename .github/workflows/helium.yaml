@@ -22,26 +22,30 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install helium selenium notebook
+          pip install -r requirements.txt
 
       - name: Install Chrome & Chromedriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
-          which chromedriver
+          sudo apt-get install -y wget unzip xvfb
+          wget -q https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chrome-linux64.zip
+          wget -q https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chromedriver-linux64.zip
+          unzip chrome-linux64.zip
+          unzip chromedriver-linux64.zip
+          sudo mv chrome-linux64 /usr/local/share/chrome
+          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+          sudo ln -s /usr/local/share/chrome/chrome /usr/local/bin/google-chrome
+          google-chrome --version
           chromedriver --version
 
-      - name: Run Helium test script
+      - name: Run Helium validation
         env:
-          PATH: /usr/lib/chromium-browser/:$PATH
+          PATH: /usr/local/bin:$PATH
         run: |
           python tests/helium_test.py
 
-      - name: Upload screenshot and logs as artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: helium-test-artifacts
-          path: |
-            screenshot.png
-            *.log
-            *.ipynb
+          name: helium-artifacts
+          path: artifacts/screenshots/
