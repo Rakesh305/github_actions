@@ -1,0 +1,47 @@
+name: Helium Test Workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  helium-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install helium selenium notebook
+
+      - name: Install Chrome & Chromedriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          which chromedriver
+          chromedriver --version
+
+      - name: Run Helium test script
+        env:
+          PATH: /usr/lib/chromium-browser/:$PATH
+        run: |
+          python helium_test.py
+
+      - name: Upload screenshot and logs as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helium-test-artifacts
+          path: |
+            screenshot.png
+            *.log
+            *.ipynb
