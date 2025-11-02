@@ -23,7 +23,7 @@ def validate_chromedriver():
         # print("Navigation successful. Page title:", driver.title)
         
         #-----------------------------------
-        go_to(url)
+        go_to("https://analyticsstudio.visualdesigner.dnb.com/#/webapps")
         click("login with SSO")
 
         write("bannaravurir", into="Username")
