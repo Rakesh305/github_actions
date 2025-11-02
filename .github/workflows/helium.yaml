@@ -16,14 +16,14 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           pip install -r requirements.txt
 
       - name: Install Chrome & Chromedriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip xvfb fluxbox x11vnc ffmpeg
+          sudo apt-get install -y wget unzip xvfb
           wget -q https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chrome-linux64.zip
           wget -q https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chromedriver-linux64.zip
           unzip chrome-linux64.zip
@@ -34,63 +34,46 @@ jobs:
           google-chrome --version
           chromedriver --version
 
-      - name: Setup display and VNC server
-        run: |
-          Xvfb :99 -screen 0 1920x1080x24 &
-          export DISPLAY=:99
-          fluxbox >/dev/null 2>&1 &
-          x11vnc -display :99 -nopw -forever -listen localhost -xkb >/dev/null 2>&1 &
-
-      - name: Install ngrok and expose live view
+      - name: Setup virtual display, VNC, noVNC and ngrok tunnel
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-          sudo apt-get update && sudo apt-get install -y ngrok jq
-          ngrok authtoken $NGROK_AUTH_TOKEN
-          nohup ngrok http 6080 >/dev/null 2>&1 &
-          sleep 5
-          echo "Access the live view via the following URL:"
-          curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
-          
-
-      - name: Setup display, VNC, noVNC and expose tunnel
-        env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          # Install dependencies
+          # Install all display + networking tools
           sudo apt-get update
-          sudo apt-get install -y xvfb x11vnc fluxbox novnc websockify ngrok jq
+          sudo apt-get install -y xvfb x11vnc fluxbox novnc websockify jq ngrok
 
-          # Start virtual X display
+          # Start Xvfb (virtual display)
           Xvfb :99 -screen 0 1920x1080x24 &
           export DISPLAY=:99
           echo "DISPLAY=:99" >> $GITHUB_ENV
 
-          # Start window manager
+          # Start a lightweight window manager
           fluxbox >/dev/null 2>&1 &
 
-          # Start VNC server
+          # Start VNC server on port 5900
           x11vnc -display :99 -nopw -forever -shared -rfbport 5900 -listen 0.0.0.0 >/dev/null 2>&1 &
           sleep 3
           echo "✅ x11vnc started on port 5900"
 
-          # Find and start noVNC/websockify
+          # Locate noVNC installation
           NOVNC_DIR=$(find /usr/share /usr/local/share -type d -name "novnc" 2>/dev/null | head -n 1)
           echo "Using noVNC directory: $NOVNC_DIR"
+
+          # Start noVNC + websockify bridge on port 6080
           websockify --web $NOVNC_DIR 6080 localhost:5900 >/dev/null 2>&1 &
           sleep 5
           echo "✅ noVNC started on port 6080"
 
-          # Now start ngrok (AFTER websockify is running)
+          # Verify local ports
+          echo "Listening ports:"
+          netstat -tln | grep -E "5900|6080" || echo "⚠️ Nothing listening yet"
+
+          # Start ngrok tunnel AFTER noVNC is running
           ngrok authtoken $NGROK_AUTH_TOKEN
           nohup ngrok http 6080 >/dev/null 2>&1 &
           sleep 8
           echo "🌍 Live View URL:"
           curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
-
-
 
       - name: Run Helium validation
         env:
@@ -99,7 +82,7 @@ jobs:
         run: |
           python tests/helium_test.py
 
-      - name: Upload artifacts
+      - name: Upload artifacts (screenshots, logs)
         uses: actions/upload-artifact@v4
         with:
           name: helium-artifacts
