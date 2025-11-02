@@ -1,5 +1,6 @@
 # tests/helium_test.py
 from helium import *
+import time
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import WebDriverException
 import os
