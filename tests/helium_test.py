@@ -30,15 +30,15 @@ def validate_chromedriver():
         write("bannaravurir@dnb.com", into="Username")
         click("Remember my username")
         click("Continue")
-        time.sleep(5)
+        time.sleep(55)
 
         write("bannaravurir@dnb.com", into="Sign in")
         click("next")
-        time.sleep(3)
+        time.sleep(53)
 
         write("", into="Enter password")
         click("Sign in")
-        time.sleep(17)
+        time.sleep(77)
         #---------------------------------
 
         os.makedirs("artifacts/screenshots", exist_ok=True)
