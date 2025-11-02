@@ -1,5 +1,5 @@
 # tests/helium_test.py
-from helium import start_chrome, go_to, kill_browser
+from helium import *
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import WebDriverException
 import os
