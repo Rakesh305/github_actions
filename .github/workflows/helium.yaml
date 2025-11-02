@@ -56,9 +56,15 @@ jobs:
 
       - name: Start noVNC service
         run: |
-          sudo apt-get install -y websockify novnc
-          mkdir -p ~/novnc
-          websockify --web /usr/share/novnc/ 6080 localhost:5900 >/dev/null 2>&1 &
+          sudo apt-get install -y novnc websockify
+          # noVNC installs here on Ubuntu:
+          NOVNC_DIR=/usr/share/novnc
+          if [ ! -d "$NOVNC_DIR" ]; then
+            NOVNC_DIR=$(find / -type d -name "novnc" 2>/dev/null | head -n 1)
+          fi
+          echo "Using noVNC directory: $NOVNC_DIR"
+          websockify --web $NOVNC_DIR 6080 localhost:5900 >/dev/null 2>&1 &
+
 
       - name: Run Helium validation
         env:
