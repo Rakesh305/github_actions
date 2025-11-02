@@ -53,16 +53,33 @@ jobs:
           sleep 5
           echo "Access the live view via the following URL:"
           curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+          
 
-      - name: Start noVNC service
+      - name: Setup display, VNC and noVNC
         run: |
-          sudo apt-get install -y novnc websockify
-          # noVNC installs here on Ubuntu:
-          NOVNC_DIR=/usr/share/novnc
-          if [ ! -d "$NOVNC_DIR" ]; then
-            NOVNC_DIR=$(find / -type d -name "novnc" 2>/dev/null | head -n 1)
-          fi
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11vnc fluxbox novnc websockify jq
+
+          # Start virtual display
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
+          # Start a simple window manager
+          fluxbox >/dev/null 2>&1 &
+
+          # Start x11vnc (listen on all interfaces so websockify can connect)
+          x11vnc -display :99 -nopw -forever -shared -rfbport 5900 -listen 0.0.0.0 >/dev/null 2>&1 &
+
+          # Verify that VNC is listening
+          sleep 2
+          netstat -tln | grep 5900 || echo "⚠️ x11vnc is not listening!"
+
+          # Find noVNC web folder (location can vary by distro)
+          NOVNC_DIR=$(find /usr/share /usr/local/share -type d -name "novnc" 2>/dev/null | head -n 1)
           echo "Using noVNC directory: $NOVNC_DIR"
+
+          # Start websockify to bridge port 6080 → 5900
           websockify --web $NOVNC_DIR 6080 localhost:5900 >/dev/null 2>&1 &
 
 
