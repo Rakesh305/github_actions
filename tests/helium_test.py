@@ -36,7 +36,7 @@ def validate_chromedriver():
         click("next")
         time.sleep(3)
 
-        write("RV8sG$dnbvij", into="Enter password")
+        write("", into="Enter password")
         click("Sign in")
         time.sleep(17)
         #---------------------------------
