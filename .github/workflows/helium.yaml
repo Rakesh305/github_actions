@@ -1,8 +1,7 @@
-name: Helium Test Workflow
+name: Helium Test Workflow (Live View)
 
 on:
   workflow_dispatch:
-
 
 jobs:
   helium-test:
@@ -24,7 +23,7 @@ jobs:
       - name: Install Chrome & Chromedriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip xvfb
+          sudo apt-get install -y wget unzip xvfb fluxbox x11vnc ffmpeg
           wget -q https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chrome-linux64.zip
           wget -q https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chromedriver-linux64.zip
           unzip chrome-linux64.zip
@@ -35,8 +34,35 @@ jobs:
           google-chrome --version
           chromedriver --version
 
+      - name: Setup display and VNC server
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          fluxbox >/dev/null 2>&1 &
+          x11vnc -display :99 -nopw -forever -listen localhost -xkb >/dev/null 2>&1 &
+
+      - name: Install ngrok and expose live view
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt-get update && sudo apt-get install -y ngrok jq
+          ngrok authtoken $NGROK_AUTH_TOKEN
+          nohup ngrok http 6080 >/dev/null 2>&1 &
+          sleep 5
+          echo "Access the live view via the following URL:"
+          curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+
+      - name: Start noVNC service
+        run: |
+          sudo apt-get install -y websockify novnc
+          mkdir -p ~/novnc
+          websockify --web /usr/share/novnc/ 6080 localhost:5900 >/dev/null 2>&1 &
+
       - name: Run Helium validation
         env:
+          DISPLAY: :99
           PATH: /usr/local/bin:$PATH
         run: |
           python tests/helium_test.py
