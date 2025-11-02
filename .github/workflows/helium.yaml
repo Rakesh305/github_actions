@@ -55,32 +55,41 @@ jobs:
           curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
           
 
-      - name: Setup display, VNC and noVNC
+      - name: Setup display, VNC, noVNC and expose tunnel
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
+          # Install dependencies
           sudo apt-get update
-          sudo apt-get install -y xvfb x11vnc fluxbox novnc websockify jq
+          sudo apt-get install -y xvfb x11vnc fluxbox novnc websockify ngrok jq
 
-          # Start virtual display
+          # Start virtual X display
           Xvfb :99 -screen 0 1920x1080x24 &
           export DISPLAY=:99
           echo "DISPLAY=:99" >> $GITHUB_ENV
 
-          # Start a simple window manager
+          # Start window manager
           fluxbox >/dev/null 2>&1 &
 
-          # Start x11vnc (listen on all interfaces so websockify can connect)
+          # Start VNC server
           x11vnc -display :99 -nopw -forever -shared -rfbport 5900 -listen 0.0.0.0 >/dev/null 2>&1 &
+          sleep 3
+          echo "✅ x11vnc started on port 5900"
 
-          # Verify that VNC is listening
-          sleep 2
-          netstat -tln | grep 5900 || echo "⚠️ x11vnc is not listening!"
-
-          # Find noVNC web folder (location can vary by distro)
+          # Find and start noVNC/websockify
           NOVNC_DIR=$(find /usr/share /usr/local/share -type d -name "novnc" 2>/dev/null | head -n 1)
           echo "Using noVNC directory: $NOVNC_DIR"
-
-          # Start websockify to bridge port 6080 → 5900
           websockify --web $NOVNC_DIR 6080 localhost:5900 >/dev/null 2>&1 &
+          sleep 5
+          echo "✅ noVNC started on port 6080"
+
+          # Now start ngrok (AFTER websockify is running)
+          ngrok authtoken $NGROK_AUTH_TOKEN
+          nohup ngrok http 6080 >/dev/null 2>&1 &
+          sleep 8
+          echo "🌍 Live View URL:"
+          curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+
 
 
       - name: Run Helium validation
