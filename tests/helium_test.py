@@ -27,18 +27,18 @@ def validate_chromedriver():
         go_to("https://analyticsstudio.visualdesigner.dnb.com/#/webapps")
         click("login with SSO")
 
-        write("bannaravurir", into="Username")
+        write("bannaravurir@dnb.com", into="Username")
         click("Remember my username")
         click("Continue")
         time.sleep(5)
 
-        write("bannaravurir", into="Sign in")
+        write("bannaravurir@dnb.com", into="Sign in")
         click("next")
         time.sleep(3)
 
-        # write("RV8sG$dnbvij", into="Enter password")
-        # click("Sign in")
-        # time.sleep(7)
+        write("RV8sG$dnbvij", into="Enter password")
+        click("Sign in")
+        time.sleep(17)
         #---------------------------------
 
         os.makedirs("artifacts/screenshots", exist_ok=True)
