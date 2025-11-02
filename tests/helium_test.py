@@ -36,9 +36,9 @@ def validate_chromedriver():
         click("next")
         time.sleep(3)
 
-        write("RV8sG$dnbvij", into="Enter password")
-        click("Sign in")
-        time.sleep(7)
+        # write("RV8sG$dnbvij", into="Enter password")
+        # click("Sign in")
+        # time.sleep(7)
         #---------------------------------
 
         os.makedirs("artifacts/screenshots", exist_ok=True)
