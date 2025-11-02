@@ -19,8 +19,26 @@ def validate_chromedriver():
         driver = start_chrome(options=options)
         print("Chrome started successfully!")
 
-        go_to("https://example.com")
-        print("Navigation successful. Page title:", driver.title)
+        # go_to("https://example.com")
+        # print("Navigation successful. Page title:", driver.title)
+        
+        #-----------------------------------
+        go_to(url)
+        click("login with SSO")
+
+        write("bannaravurir", into="Username")
+        click("Remember my username")
+        click("Continue")
+        time.sleep(5)
+
+        write("bannaravurir", into="Sign in")
+        click("next")
+        time.sleep(3)
+
+        write("RV8sG$dnbvij", into="Enter password")
+        click("Sign in")
+        time.sleep(7)
+        #---------------------------------
 
         os.makedirs("artifacts/screenshots", exist_ok=True)
         screenshot_path = os.path.join("artifacts/screenshots", "example.png")
